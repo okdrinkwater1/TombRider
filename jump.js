@@ -7,8 +7,6 @@ let doodlerWidth=46;
 let doodlerHeight=46;
 let doodlerX=boardWidth/2-doodlerWidth/2;
 let doodlerY=boardHeight*7/8-doodlerHeight;
-let doodlerRightImg;
-let doodlerLeftImg;
 
 let velocityX=0;
 let velocityY=0;
@@ -22,7 +20,9 @@ let graveDrawHeight=60;
 let graveTopOffset=6;
 let graveImg;
 
+let bestScore=0;
 let score=0;
+let maxScore=0;
 
 let skeletonSheet;
 let SPRITE_SIZE=32;
@@ -57,11 +57,15 @@ window.onload=function(){
     velocityY=initialVelocityY;
     document.addEventListener("keydown",moveDoodler);
     placeGrave();
+    bestScore=(Number(localStorage.getItem("bestScore"))||0);
     requestAnimationFrame(update);
 }
 
 function update(){
     requestAnimationFrame(update);
+    if(gameOver){
+        return;
+    }
     context.clearRect(0,0,board.width,board.height);
     context.fillStyle="black";
     context.fillRect(0,0,boardWidth,boardHeight);
@@ -78,6 +82,10 @@ function update(){
     doodler.y+=velocityY;
     if(doodler.y>board.height){
         gameOver=true;
+        if(score>bestScore){
+            bestScore=score;
+            localStorage.setItem("bestScore",bestScore);
+        }
     }
     for(let i=0;i<graveArray.length;i++){
         let grave=graveArray[i];
@@ -93,6 +101,15 @@ function update(){
         graveArray.shift();
         newGrave();
     }
+    updateScore();
+    context.fillStyle="black";
+    context.font="16px sans-serif";
+    context.fillStyle="green";
+    context.fillText(score,5,20);
+    context.fillText("Best:"+bestScore,280,20);
+    if(gameOver){
+        context.fillText("Game Over: Press 'Space' to Restart",boardWidth/7,boardHeight*7/8);
+    }
     drawSkeleton();
 }
 
@@ -105,7 +122,21 @@ function moveDoodler(e){
         velocityX=-4;
         doodler.facingRight=false;
     }
-
+    else if(e.code=="Space"&&gameOver){
+        doodler={
+            facingRight:true,
+            x:doodlerX,
+            y:doodlerY,
+            width:doodlerWidth,
+            height:doodlerHeight
+        }
+        velocityX=0;
+        velocityY=initialVelocityY;
+        score=0;
+        maxScore=0;
+        gameOver=false;
+        placeGrave();
+    }
 }
 
 function createMoon(){
@@ -182,4 +213,17 @@ function detectCollision(a,b){
        a.x+a.width>b.x &&
        a.y<b.y+b.height &&
        a.y+a.height>b.y;
+}
+
+function updateScore(){
+    let points=Math.floor(50*Math.random());
+    if(velocityY<0){
+        maxScore+=points;
+        if(score<maxScore){
+            score=maxScore;
+        }
+    }
+    else if(velocityY>=0){
+        maxScore-=points;
+    }
 }
