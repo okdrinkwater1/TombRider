@@ -29,6 +29,8 @@ let SPRITE_SIZE=32;
 
 let moonBg;
 
+let start=false;
+
 let gameOver=false;
 
 let doodler={
@@ -37,6 +39,54 @@ let doodler={
     y:doodlerY,
     width:doodlerWidth,
     height:doodlerHeight
+}
+
+let audio_ctx=null;
+document.addEventListener("keydown",()=>{
+    if(!audio_ctx){
+        audio_ctx=new AudioContext();
+    }
+    audio_ctx.resume();
+})
+
+const hz=(n)=>440*Math.pow(2,(n-69)/12);
+const A3=57,A4=69,C5=72,E5=76;
+const music=(midi,delay,duration,type,volume,cutoff)=>{
+    if(!audio_ctx){
+        return;
+    }
+    const time=audio_ctx.currentTime+delay;
+    const oscillator=audio_ctx.createOscillator();
+    const gain=audio_ctx.createGain();
+    const frequency=audio_ctx.createBiquadFilter();
+    oscillator.type=type;
+    oscillator.frequency.setValueAtTime(hz(midi),time);
+    frequency.type="lowpass";
+    frequency.frequency.value=cutoff;
+    gain.gain.setValueAtTime(volume,time);
+    gain.gain.exponentialRampToValueAtTime(0.001,time+duration);
+    oscillator.connect(frequency);
+    frequency.connect(gain);
+    gain.connect(audio_ctx.destination);
+    oscillator.start(time);
+    oscillator.stop(time+duration);
+}
+
+const start_sound=()=>{
+    music(A4,0,0.1,"triangle",0.2,6000);
+    music(C5,0.1,0.1,"triangle",0.2,6000);
+    music(E5,0.2,0.25,"triangle",0.2,6000);
+}
+
+const jump_sound=()=>{
+    music(A4,0,0.08,"triangle",0.12,6000);
+}
+
+const gameover_sound=()=>{
+    music(E5,0,0.2,"square",0.15,800);
+    music(C5,0.2,0.2,"square",0.15,800);
+    music(A4,0.4,0.2,"square",0.15,800);
+    music(A3,0.6,0.5,"square",0.15,400);
 }
 
 window.onload=function(){
@@ -70,18 +120,32 @@ function update(){
     context.fillStyle="black";
     context.fillRect(0,0,boardWidth,boardHeight);
     context.drawImage(moonBg,0,0);
+    if(!start){
+        for(let i=0;i<graveArray.length;i++){
+            drawGrave(graveArray[i]);
+        }
+        context.textAlign="center";
+        context.fillStyle="white";
+        context.font="bold 26px 'Courier New',monospace";
+        context.fillText("TombRider",boardWidth/2,boardHeight/2-20);
+        context.font="16px sans-serif";
+        context.fillText("Press Space to Start",boardWidth/2,boardHeight/2);
+        context.textAlign="left";
+        return;
+    }
      
     doodler.x+=velocityX;
-    if(doodler.x>boardWidth){
+    if(doodler.x<0){
         doodler.x=0;
     }
-    else if(doodler.x+doodler.width<0){
-      doodler.x=boardWidth;
+    else if(doodler.x+doodler.width>boardWidth){
+        doodler.x=boardWidth-doodler.width;
     }
     velocityY+=gravity;
     doodler.y+=velocityY;
     if(doodler.y>board.height){
         gameOver=true;
+        gameover_sound();
         if(score>bestScore){
             bestScore=score;
             localStorage.setItem("bestScore",bestScore);
@@ -94,6 +158,7 @@ function update(){
         }
         if(detectCollision(doodler,grave)&&velocityY>=0){
             velocityY=initialVelocityY;
+            jump_sound();
         }
         drawGrave(grave);
     }
@@ -102,7 +167,6 @@ function update(){
         newGrave();
     }
     updateScore();
-    context.fillStyle="black";
     context.font="16px sans-serif";
     context.fillStyle="green";
     context.fillText(score,5,20);
@@ -114,6 +178,13 @@ function update(){
 }
 
 function moveDoodler(e){
+    if(!start){
+        if(e.code=="Space"){
+            start=true;
+            start_sound();
+        }
+        return;
+    }
     if(e.code=="ArrowRight"||e.code=="KeyD"){
         velocityX=4;
         doodler.facingRight=true;
@@ -136,6 +207,7 @@ function moveDoodler(e){
         maxScore=0;
         gameOver=false;
         placeGrave();
+        start_sound();
     }
 }
 
@@ -165,7 +237,7 @@ function drawSkeleton(){
     }
     else{
         let t=Math.min(velocityY/(-initialVelocityY),1);
-        col=maxCol-Math.min(maxCol,Math.floor(t*maxCol+1));
+        col=maxCol-Math.min(maxCol,Math.floor(t*(maxCol+1)));
     }
     context.save();
     if(!doodler.facingRight){
