@@ -157,8 +157,16 @@ function createMoon(){
 
 function drawSkeleton(){
     let col=0;
-    let row=0;
-
+    let row=1;
+    let maxCol=5;
+    if(velocityY<0){
+        let t=(velocityY-initialVelocityY)/(-initialVelocityY);
+        col=Math.min(maxCol,Math.floor(t*(maxCol+1)));
+    }
+    else{
+        let t=Math.min(velocityY/(-initialVelocityY),1);
+        col=maxCol-Math.min(maxCol,Math.floor(t*maxCol+1));
+    }
     context.save();
     if(!doodler.facingRight){
         context.translate(doodler.x+doodler.width,doodler.y);
