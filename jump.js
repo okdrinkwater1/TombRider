@@ -10,7 +10,7 @@ let doodlerY=boardHeight*7/8-doodlerHeight;
 
 let velocityX=0;
 let velocityY=0;
-let initialVelocityY=-8;
+let initialVelocityY=-9;
 let gravity=0.4;
 
 let graveArray=[];
@@ -32,6 +32,8 @@ let moonBg;
 let start=false;
 
 let gameOver=false;
+
+let lastTime=0;
 
 let doodler={
     facingRight:true,
@@ -111,8 +113,13 @@ window.onload=function(){
     requestAnimationFrame(update);
 }
 
-function update(){
+function update(timestamp){
     requestAnimationFrame(update);
+    let dt=(timestamp-lastTime)/(1000/60);
+    lastTime=timestamp;
+    if(dt>3){
+        dt=3;
+    }
     if(gameOver){
         return;
     }
@@ -134,15 +141,15 @@ function update(){
         return;
     }
      
-    doodler.x+=velocityX;
+    doodler.x+=velocityX*dt;
     if(doodler.x<0){
         doodler.x=0;
     }
     else if(doodler.x+doodler.width>boardWidth){
         doodler.x=boardWidth-doodler.width;
     }
-    velocityY+=gravity;
-    doodler.y+=velocityY;
+    velocityY+=gravity*dt;
+    doodler.y+=velocityY*dt;
     if(doodler.y>board.height){
         gameOver=true;
         gameover_sound();
@@ -154,7 +161,7 @@ function update(){
     for(let i=0;i<graveArray.length;i++){
         let grave=graveArray[i];
         if(velocityY<0&&doodler.y<boardHeight*3/4){
-            grave.y-=initialVelocityY;
+            grave.y-=initialVelocityY*dt;
         }
         if(detectCollision(doodler,grave)&&velocityY>=0){
             velocityY=initialVelocityY;
@@ -166,7 +173,7 @@ function update(){
         graveArray.shift();
         newGrave();
     }
-    updateScore();
+    updateScore(dt);
     context.font="16px sans-serif";
     context.fillStyle="green";
     context.fillText(score,5,20);
@@ -295,8 +302,8 @@ function detectCollision(a,b){
        a.y+a.height>b.y;
 }
 
-function updateScore(){
-    let points=Math.floor(50*Math.random());
+function updateScore(dt){
+    let points=Math.floor(50*Math.random()*dt);
     if(velocityY<0){
         maxScore+=points;
         if(score<maxScore){
