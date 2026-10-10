@@ -13,7 +13,7 @@ let doodlerLeftImg;
 let velocityX=0;
 let velocityY=0;
 let initialVelocityY=-8;
-let gravity=0.5;
+let gravity=0.4;
 
 let graveArray=[];
 let graveWidth=40;
@@ -21,6 +21,8 @@ let graveHeight=18;
 let graveDrawHeight=60;
 let graveTopOffset=6;
 let graveImg;
+
+let score=0;
 
 let skeletonSheet;
 let SPRITE_SIZE=32;
@@ -70,7 +72,7 @@ function update(){
         doodler.x=0;
     }
     else if(doodler.x+doodler.width<0){
-        doodler.x=boardWidth;
+      doodler.x=boardWidth;
     }
     velocityY+=gravity;
     doodler.y+=velocityY;
@@ -78,7 +80,18 @@ function update(){
         gameOver=true;
     }
     for(let i=0;i<graveArray.length;i++){
-        drawGrave(graveArray[i]);
+        let grave=graveArray[i];
+        if(velocityY<0&&doodler.y<boardHeight*3/4){
+            grave.y-=initialVelocityY;
+        }
+        if(detectCollision(doodler,grave)&&velocityY>=0){
+            velocityY=initialVelocityY;
+        }
+        drawGrave(grave);
+    }
+    while(graveArray.length>0&&graveArray[0].y>=boardHeight){
+        graveArray.shift();
+        newGrave();
     }
     drawSkeleton();
 }
@@ -128,6 +141,7 @@ function drawSkeleton(){
 }
 
 function placeGrave(){
+    graveArray=[];
     graveArray.push({
         img:graveImg,
         x:boardWidth/2,
@@ -135,7 +149,7 @@ function placeGrave(){
         width:graveWidth,
         height:graveHeight
     });
-    for(let i=0;i<6;i++){
+    for(let i=0;i<5;i++){
         let randomX=Math.floor(Math.random()*boardWidth*3/4);
         graveArray.push({
             img:graveImg,
@@ -149,4 +163,23 @@ function placeGrave(){
 
 function drawGrave(grave){
     context.drawImage(grave.img,grave.x,grave.y-graveTopOffset,grave.width,graveDrawHeight);
+}
+
+function newGrave(){
+    let randomX=Math.floor(Math.random()*boardWidth*3/4);
+    let grave={
+        img:graveImg,
+        x:randomX,
+        y:-graveHeight,
+        width:graveWidth,
+        height:graveHeight
+    }
+    graveArray.push(grave);
+}
+
+function detectCollision(a,b){
+    return a.x<b.x+b.width &&
+       a.x+a.width>b.x &&
+       a.y<b.y+b.height &&
+       a.y+a.height>b.y;
 }
