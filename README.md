@@ -39,7 +39,8 @@ i was always fascinated by how games work behind the scene, and how cool their a
 
 # CREDITS
 asset are taken from opengameart.org
--grave by [simranzenov]
--skeleton by [Calciumtrice] 
+- grave by [simranzenov]
+- skeleton by [Calciumtrice] 
 
+# SCREENSHOTS(workflow)
 <img src="game.png" width="400">
